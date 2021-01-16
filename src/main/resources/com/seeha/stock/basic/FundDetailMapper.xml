@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.seeha.stock.basic.mapper.FundDetailMapper">
+    <resultMap id="BaseResultMap" type="com.seeha.stock.basic.entity.FundDetail">
+        <result column="STOCK_CODE" property="stockCode" jdbcType="VARCHAR"/>
+        <result column="STOCK_NAME" property="stockName" jdbcType="VARCHAR"/>
+        <result column="SUPPER_SUM" property="supperSum" jdbcType="DECIMAL"/>
+        <result column="BIG_SUM" property="bigSum" jdbcType="DECIMAL"/>
+        <result column="MIDDLE_SUM" property="middleSum" jdbcType="DECIMAL"/>
+        <result column="SMALL_SUM" property="smallSum" jdbcType="DECIMAL"/>
+
+
+    </resultMap>
+
+    <select id="selectStockSum" resultMap="BaseResultMap">
+        SELECT
+            fd.stock_code,
+            fd.stock_name,
+            SUM(fd.supper_sum)/10000 AS supper_sum,
+            SUM(fd.big_sum)/10000 AS big_sum,
+            SUM(fd.middle_sum)/10000 AS middle_sum,
+            SUM(fd.small_sum)/10000 AS small_sum
+        FROM
+            fund_detail fd
+        GROUP BY
+            fd.stock_code,
+            fd.stock_name
+        ORDER BY  SUM(fd.supper_sum) DESC
+    </select>
+
+    <select id="selectStockAllOrderBySupper" resultType="com.seeha.stock.basic.entity.FundDetail">
+        SELECT *
+        FROM
+        fund_detail fd
+    </select>
+</mapper>
