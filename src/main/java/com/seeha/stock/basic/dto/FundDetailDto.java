@@ -8,6 +8,25 @@ import java.math.BigDecimal;
 public class FundDetailDto {
 
     /**
+     * 成交量
+     */
+    private BigDecimal f2;
+    /**
+     * 成交量
+     */
+    private BigDecimal f5;
+
+    /**
+     * 换手率
+     */
+    private BigDecimal f8;
+
+    /**
+     * 流通市值
+     */
+    private BigDecimal f21;
+
+    /**
      * 超大单流入(庄家)
       */
     private BigDecimal f64;
@@ -42,4 +61,11 @@ public class FundDetailDto {
      * 小单流出(韭菜)
      */
     private BigDecimal f83;
+
+
+    /**
+     * 主板块
+     */
+    private String f265;
+
 }

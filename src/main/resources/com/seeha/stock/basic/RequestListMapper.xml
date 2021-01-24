@@ -12,6 +12,8 @@
         <result column="METHOD" property="method" jdbcType="VARCHAR"/>
         <result column="UPDATE_DATE" property="updateDate" jdbcType="VARCHAR"/>
         <result column="stock_desc" property="stockDesc" jdbcType="VARCHAR"/>
+        <result column="stock_plate" property="stockPlate" jdbcType="VARCHAR"/>
+        <result column="circulation" property="circulation" jdbcType="DECIMAL"/>
     </resultMap>
 
     <select id="selectDataNotProcess" resultMap="BaseResultMap" parameterType="com.seeha.stock.basic.entity.RequestList">

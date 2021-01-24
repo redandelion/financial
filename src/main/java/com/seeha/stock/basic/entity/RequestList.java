@@ -3,6 +3,7 @@ package com.seeha.stock.basic.entity;
 import lombok.Data;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 
 @Data
 @Entity
@@ -29,4 +30,12 @@ public class RequestList {
 
     @Column(columnDefinition = "stock_desc")
     private String stockDesc;
+
+    //主板块
+    private String stockPlate;
+
+    /**
+     * 市流通值
+     */
+    private BigDecimal circulation;
 }

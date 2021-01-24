@@ -22,4 +22,7 @@ public class ResultVO {
     private List<BigDecimal> sum;
 
     private String stockDesc;
+
+    // 换手率，14天之内最高值除最低值大于 5倍的股票
+    private BigDecimal turnRate;
 }

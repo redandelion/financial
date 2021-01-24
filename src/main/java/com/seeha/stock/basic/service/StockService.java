@@ -12,4 +12,10 @@ public interface StockService {
 
    List<ResultVO> getChatLine();
 
+   /**
+    * 换手率对比
+    * @return
+    */
+   List<ResultVO> getRender();
+
 }

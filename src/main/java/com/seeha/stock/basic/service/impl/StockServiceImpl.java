@@ -104,6 +104,54 @@ public class StockServiceImpl implements StockService {
         return resultVOS;
     }
 
+    @Override
+    public List<ResultVO> getRender() {
+        List<ResultVO> resultVOS = new ArrayList<>();
+        List<RequestList> requestLists = requestListMapper.selectAll();
+        List<FundDetail> fundDetails = fundDetailMapper.selectAll();
+        Map<String, List<RequestList>> requestMap = requestLists.stream().collect(Collectors.groupingBy(RequestList::getStockName));
+        // 汇总所有股票
+        Map<String, List<FundDetail>> stockMap = fundDetails.stream().collect(Collectors.groupingBy(FundDetail::getStockName));
+        // 设置返回值
+        stockMap.forEach((stockName, stockList) ->{
+            List<List<BigDecimal>> list = new ArrayList<>();
+            ResultVO resultVO = new ResultVO();
+            // 设置标题
+            resultVO.setTitle(stockName);
+            // 设置横坐标
+            resultVO.setXAxis(stockMap.get(stockName).stream().map(v->v.getStockDate().substring(v.getStockDate().length()-5,v.getStockDate().length())).collect(Collectors.toList()));
+            // 设置换手率值
+            List<BigDecimal> collectTurnoverRate = stockList.stream().map(value -> value.getTurnoverRate()).collect(Collectors.toList());
+
+            // 设置价格
+            List<BigDecimal> collectUintPrice = stockList.stream().map(value -> value.getUnitPrice()).collect(Collectors.toList());
+            // 获取14天之内，最高与最低换手率在5倍以上的
+            List<FundDetail> collect15 = stockList.stream().sorted(Comparator.comparing(FundDetail::getStockDate)).collect(Collectors.toList());
+            List<FundDetail> details15 = collect15.subList(0, collect15.size() > 14 ? 14 : collect15.size());
+            //求最大值
+            BigDecimal max = details15.stream().map(FundDetail::getTurnoverRate).max((x1, x2) -> x1.compareTo(x2)).get();
+            //求最小值
+            BigDecimal min = details15.stream().map(FundDetail::getTurnoverRate).min((x1, x2) -> x1.compareTo(x2)).get();
+
+            BigDecimal scale = max.divide(min,2,BigDecimal.ROUND_HALF_UP);
+            resultVO.setTurnRate(scale);
+
+
+            list.add(collectTurnoverRate);
+            list.add(collectUintPrice);
+            resultVO.setSeries(list);
+            // 设置描述
+            resultVO.setStockDesc(requestMap.get(stockName).get(0).getStockDesc());
+            resultVOS.add(resultVO);
+        } );
+
+        // 按换手率倍数排序
+        List<ResultVO> resultVOList = resultVOS.stream().sorted(Comparator.comparing(ResultVO::getTurnRate).reversed()).collect(Collectors.toList());
+
+        return resultVOList;
+    }
+
+
     private void processSingleRequest(RequestList requestList){
 
         HttpMethod method = null;
@@ -150,6 +198,16 @@ public class StockServiceImpl implements StockService {
                 fundDetail.setSmallIn(fundDetailDto.getF82());
                 fundDetail.setSmallOut(fundDetailDto.getF83());
 
+                // 价格
+                fundDetail.setUnitPrice(fundDetailDto.getF2());
+                // 换手率
+                fundDetail.setTurnoverRate(fundDetailDto.getF8());
+                // 成交量
+                fundDetail.setVolume(fundDetailDto.getF5());
+                // 主板块
+                fundDetail.setPlate(fundDetailDto.getF265());
+                // 市流通值
+                fundDetail.setCirculation(fundDetailDto.getF21());
                 // sum
                 fundDetail.setSupperSum(fundDetailDto.getF64().subtract(fundDetailDto.getF65()));
                 fundDetail.setBigSum(fundDetailDto.getF70().subtract(fundDetailDto.getF71()));
@@ -157,10 +215,12 @@ public class StockServiceImpl implements StockService {
                 fundDetail.setSmallSum(fundDetailDto.getF82().subtract(fundDetailDto.getF83()));
                 // date
                 fundDetail.setStockDate(today);
+                // 回写成功数据
+                requestList.setStockPlate(fundDetailDto.getF265());
+                requestList.setCirculation(fundDetailDto.getF21());
+                requestList.setUpdateDate(today);
                 fundDetailList.add(fundDetail);
             }
-            // 回写成功数据
-            requestList.setUpdateDate(today);
         }
         return fundDetailList;
     }

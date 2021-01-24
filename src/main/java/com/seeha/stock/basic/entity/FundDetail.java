@@ -49,4 +49,31 @@ public class FundDetail {
     @Column(columnDefinition = "stock_date")
     private String stockDate;
 
+
+    /**
+     * 成交量
+     */
+    private BigDecimal unitPrice;
+
+
+    /**
+     * 成交量
+     */
+    private BigDecimal volume;
+
+
+    /**
+     * 换手率
+     */
+    private BigDecimal turnoverRate;
+
+    /**
+     * 市流通值
+     */
+    private BigDecimal circulation;
+
+    /**
+     * 主板块
+     */
+    private String plate;
 }
