@@ -1,6 +1,7 @@
 package com.seeha.stock.basic.mapper;
 
 import com.seeha.stock.basic.entity.FundDetail;
+import com.seeha.stock.basic.entity.Kline;
 import com.seeha.stock.basic.entity.RequestList;
 import org.springframework.stereotype.Repository;
 import tk.mybatis.mapper.common.Mapper;
@@ -8,18 +9,18 @@ import tk.mybatis.mapper.common.Mapper;
 import java.util.List;
 
 @Repository
-public interface FundDetailMapper extends Mapper<FundDetail> {
+public interface KlineMapper extends Mapper<Kline> {
 
     /**
-     * Sum Stock
+     * 获取股票k线信息
+     * @param request
      * @return
      */
-    List<FundDetail> selectStockSum();
-
+    List<FundDetail> selectKline(RequestList request);
 
     /**
-     * OrderBySupper
-     * @return
+     * 批量插入
+     * @param klineList
      */
-    List<FundDetail> selectStockAllOrderBySupper();
+    Integer batchInsert(List<Kline> klineList);
 }

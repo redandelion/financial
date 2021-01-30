@@ -9,4 +9,7 @@ public class FundDto {
     private Integer total;
     private List<FundDetailDto> diff;
 
+    // k线
+    private List<String> klines;
+
 }

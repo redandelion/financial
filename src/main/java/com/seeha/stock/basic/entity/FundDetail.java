@@ -76,4 +76,15 @@ public class FundDetail {
      * 主板块
      */
     private String plate;
+
+    @Transient
+    private String stockDesc;
+
+    @Transient
+    private BigDecimal end;
+
+    @Transient
+    private BigDecimal rank1;
+    @Transient
+    private BigDecimal rank2;
 }

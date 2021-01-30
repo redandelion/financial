@@ -18,4 +18,9 @@ public interface StockService {
     */
    List<ResultVO> getRender();
 
+   /**
+    * 获取K线信息
+    * @return
+    */
+   String getStocksKlineInfo();
 }

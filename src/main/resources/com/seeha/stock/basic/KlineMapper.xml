@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.seeha.stock.basic.mapper.KlineMapper">
+
+
+
+    <select id="selectKline" resultType="com.seeha.stock.basic.entity.FundDetail" parameterType="com.seeha.stock.basic.entity.RequestList">
+
+
+        SELECT
+            SUBSTR(li.date,6,5) as stockDate,
+            li.stock_code AS stockCode,
+            li.date,
+            li.`start`,
+            li.kmax,
+            li.kmin,
+            li.`end` as unitPrice,
+            li.volume,
+            li.total_price,
+            li.swing,
+            li.updown,
+            li.updown_swing,
+            li.turnover_rate AS turnoverrate,
+            rl.stock_desc as stockDesc,
+            rl.stock_name,
+            TRUNCATE((SELECT sum(li.turnover_rate) FROM kline li where li.request_list_id  = #{requestListId} and li.kline_id > (SELECT max(li.kline_id) FROM kline li where li.request_list_id = #{requestListId} ) -3  ) / (SELECT min(li.turnover_rate) FROM kline li where li.request_list_id  = #{requestListId} and  li.date >= date_format( date_add( now(), INTERVAL - 45 DAY ), '%Y-%m-%d' )),2) as rank1 ,
+            (SELECT min(li.turnover_rate) FROM kline li where li.request_list_id  = #{requestListId} and  li.date >= date_format( date_add( now(), INTERVAL - 45 DAY ), '%Y-%m-%d' )) ,
+            ABS(IFNULL( li.updown_swing, 0 ) / IFNULL( li.turnover_rate, 0 )) AS rank2
+        FROM
+            kline li
+                LEFT JOIN request_list rl ON rl.request_list_id = li.request_list_id
+        WHERE
+            li.date >= date_format( date_add( now(), INTERVAL - 45 DAY ), '%Y-%m-%d' )
+          AND li.request_list_id  = #{requestListId}
+
+
+
+
+    </select>
+
+
+    <insert id="batchInsert">
+        INSERT INTO kline
+
+        (
+        request_list_id,
+        stock_code,
+        date,
+        start,
+        kmax,
+        kmin,
+        end,
+        volume,
+        total_price,
+        swing,
+        updown,
+        updown_swing,
+        turnover_rate
+        )
+
+        VALUES
+
+        <foreach collection ="list" item="kline" separator =",">
+
+            (
+             #{kline.requestListId},
+             #{kline.stockCode},
+             #{kline.date},
+             #{kline.start},
+             #{kline.kmax},
+             #{kline.kmin},
+             #{kline.end},
+             #{kline.volume},
+             #{kline.totalPrice},
+             #{kline.swing},
+             #{kline.updown},
+             #{kline.updownSwing},
+             #{kline.turnoverRate}
+             )
+
+        </foreach >
+
+
+
+    </insert>
+</mapper>

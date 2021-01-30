@@ -19,6 +19,8 @@ public class RequestList {
     private String stockName;
 
     private String url;
+
+    private String kurl;
     @Column(columnDefinition = "body_param")
     private String bodyParam;
     @Column(columnDefinition = "header_param")

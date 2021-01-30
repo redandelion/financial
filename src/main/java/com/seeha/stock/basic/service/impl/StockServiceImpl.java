@@ -7,10 +7,13 @@ import com.seeha.stock.basic.dto.FundDetailDto;
 import com.seeha.stock.basic.dto.ResultDto;
 import com.seeha.stock.basic.dto.ResultVO;
 import com.seeha.stock.basic.entity.FundDetail;
+import com.seeha.stock.basic.entity.Kline;
 import com.seeha.stock.basic.entity.RequestList;
 import com.seeha.stock.basic.mapper.FundDetailMapper;
+import com.seeha.stock.basic.mapper.KlineMapper;
 import com.seeha.stock.basic.mapper.RequestListMapper;
 import com.seeha.stock.basic.service.StockService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
@@ -34,6 +37,9 @@ public class StockServiceImpl implements StockService {
     @Autowired
     private FundDetailMapper fundDetailMapper;
 
+    @Autowired
+    private KlineMapper klineMapper;
+
     @Override
     public String getStocksInfo() {
         //String url, HttpMethod method, MultiValueMap<String, String> params
@@ -49,7 +55,29 @@ public class StockServiceImpl implements StockService {
             int sleep = (int) (Math.random()*(10-1)+1);
             // process data
             processSingleRequest(requestList);
+            try {
+                Thread.sleep(sleep*100);
+                System.out.println("睡眠："+sleep);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
+        return "";
+    }
+
+
+    @Override
+    public String getStocksKlineInfo() {
+        //String url, HttpMethod method, MultiValueMap<String, String> params
+
+        // 获取请求list
+        List<RequestList> requestLists = requestListMapper.selectAll();
+
+        for (RequestList requestList :requestLists){
+            int sleep = (int) (Math.random()*(10-1)+1);
+            // process data
+            processSingleRequestKLines(requestList);
             try {
                 Thread.sleep(sleep*100);
                 System.out.println("睡眠："+sleep);
@@ -108,10 +136,38 @@ public class StockServiceImpl implements StockService {
     public List<ResultVO> getRender() {
         List<ResultVO> resultVOS = new ArrayList<>();
         List<RequestList> requestLists = requestListMapper.selectAll();
-        List<FundDetail> fundDetails = fundDetailMapper.selectAll();
+        /*List<FundDetail> fundDetails = fundDetailMapper.selectAll();
         Map<String, List<RequestList>> requestMap = requestLists.stream().collect(Collectors.groupingBy(RequestList::getStockName));
         // 汇总所有股票
         Map<String, List<FundDetail>> stockMap = fundDetails.stream().collect(Collectors.groupingBy(FundDetail::getStockName));
+        */
+        requestLists.forEach(request -> {
+            List<List<BigDecimal>> list = new ArrayList<>();
+            ResultVO resultVO = new ResultVO();
+            List<FundDetail> stockList = klineMapper.selectKline(request);
+            // 设置标题
+            resultVO.setTitle(request.getStockName());
+
+            // 设置描述
+            resultVO.setStockDesc(request.getStockDesc());
+            // 设置横坐标
+            resultVO.setXAxis(stockList.stream().map(FundDetail::getStockDate).collect(Collectors.toList()));
+
+            // 设置换手率值
+            List<BigDecimal> collectTurnoverRate = stockList.stream().map(FundDetail::getTurnoverRate).collect(Collectors.toList());
+            // 设置价格
+            List<BigDecimal> collectUintPrice = stockList.stream().map(FundDetail::getUnitPrice).collect(Collectors.toList());
+            // 排序 按最近3天之和/30的最低值排序
+            resultVO.setTurnRate(stockList.get(0).getRank1());
+
+            list.add(collectTurnoverRate);
+            list.add(collectUintPrice);
+            // 设置y 坐标
+            resultVO.setSeries(list);
+
+            resultVOS.add(resultVO);
+        });
+        /*
         // 设置返回值
         stockMap.forEach((stockName, stockList) ->{
             List<List<BigDecimal>> list = new ArrayList<>();
@@ -125,9 +181,10 @@ public class StockServiceImpl implements StockService {
 
             // 设置价格
             List<BigDecimal> collectUintPrice = stockList.stream().map(value -> value.getUnitPrice()).collect(Collectors.toList());
+
             // 获取14天之内，最高与最低换手率在5倍以上的
             List<FundDetail> collect15 = stockList.stream().sorted(Comparator.comparing(FundDetail::getStockDate)).collect(Collectors.toList());
-            List<FundDetail> details15 = collect15.subList(0, collect15.size() > 14 ? 14 : collect15.size());
+            List<FundDetail> details15 = collect15.subList(0, collect15.size() > 21 ? 21 : collect15.size());
             //求最大值
             BigDecimal max = details15.stream().map(FundDetail::getTurnoverRate).max((x1, x2) -> x1.compareTo(x2)).get();
             //求最小值
@@ -144,6 +201,7 @@ public class StockServiceImpl implements StockService {
             resultVO.setStockDesc(requestMap.get(stockName).get(0).getStockDesc());
             resultVOS.add(resultVO);
         } );
+        */
 
         // 按换手率倍数排序
         List<ResultVO> resultVOList = resultVOS.stream().sorted(Comparator.comparing(ResultVO::getTurnRate).reversed()).collect(Collectors.toList());
@@ -171,6 +229,69 @@ public class StockServiceImpl implements StockService {
         // 保存
         saveStockData(fundDetails,requestList);
 
+    }
+
+    private void processSingleRequestKLines(RequestList requestList){
+
+        HttpMethod method = null;
+        MultiValueMap<String,String> params = new LinkedMultiValueMap<>();
+
+        // 发送报文
+        if ("GET".equals(requestList.getMethod())){
+            method = HttpMethod.GET;
+        }
+        String result = clientComponent.httpClient(requestList.getKurl(), method, params);
+        GsonBuilder builder = new GsonBuilder();
+        Gson gson = builder.create();
+        // 解析
+        ResultDto resultDto = gson.fromJson(result, ResultDto.class);
+        //转换
+        List<Kline> klineList = covert2klines(resultDto, requestList);
+        // 保存
+        Integer integer = klineMapper.batchInsert(klineList);
+        System.out.println("处理了："+integer.intValue()+"条记录");
+
+    }
+
+    private List<Kline> covert2klines(ResultDto resultDto, RequestList requestList) {
+        // 删除有关联的数据
+        List<Kline> klineList = new ArrayList<>();
+        Kline kline = new Kline();
+        kline.setRequestListId(requestList.getRequestListId());
+        klineMapper.delete(kline);
+
+        // 遍历数组
+        if (resultDto.getData() != null && resultDto.getData().getKlines() != null){
+            List<String> klines = resultDto.getData().getKlines();
+            // 转换为数组
+            klines.stream().forEach(value -> {
+                String[] split = StringUtils.split(value, ",");
+                Kline line = new Kline();
+                line.setDate(split[0]);
+                line.setStart(new BigDecimal(String.valueOf(split[1])));
+                line.setEnd(new BigDecimal(String.valueOf(split[2])));
+                line.setKmax(new BigDecimal(String.valueOf(split[3])));
+                line.setKmin(new BigDecimal(String.valueOf(split[4])));
+
+                line.setVolume(new BigDecimal(String.valueOf(split[5])));
+                line.setTotalPrice(new BigDecimal(String.valueOf(split[6])));
+
+                line.setSwing(new BigDecimal(String.valueOf(split[7])));
+                line.setUpdownSwing(new BigDecimal(String.valueOf(split[8])));
+                line.setUpdown(new BigDecimal(String.valueOf(split[9])));
+                line.setTurnoverRate(new BigDecimal(String.valueOf(split[10])));
+
+
+                // 技术字段
+                line.setStockCode(requestList.getStockCode());
+                line.setRequestListId(requestList.getRequestListId());
+                klineList.add(line);
+            });
+
+        }
+        // 赋值
+
+        return klineList;
     }
 
 

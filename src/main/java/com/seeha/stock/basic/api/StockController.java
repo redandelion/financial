@@ -35,6 +35,14 @@ public class StockController {
         return "success";
     }
 
+
+    @GetMapping("/pull/kline")
+    public String listKline(){
+
+        stockService.getStocksKlineInfo();
+        return "success";
+    }
+
     @GetMapping("/chats/list")
     private List<ResultVO> lineChats(HttpServletResponse response){
 
