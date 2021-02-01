@@ -67,5 +67,9 @@ public class FundDetailDto {
      * 主板块
      */
     private String f265;
+    /**
+     * 个股概念
+     */
+    private String f103;
 
 }

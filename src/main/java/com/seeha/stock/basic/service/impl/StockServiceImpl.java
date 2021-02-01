@@ -8,12 +8,15 @@ import com.seeha.stock.basic.dto.ResultDto;
 import com.seeha.stock.basic.dto.ResultVO;
 import com.seeha.stock.basic.entity.FundDetail;
 import com.seeha.stock.basic.entity.Kline;
+import com.seeha.stock.basic.entity.KlineInterface;
 import com.seeha.stock.basic.entity.RequestList;
 import com.seeha.stock.basic.mapper.FundDetailMapper;
+import com.seeha.stock.basic.mapper.KlineInterfaceMapper;
 import com.seeha.stock.basic.mapper.KlineMapper;
 import com.seeha.stock.basic.mapper.RequestListMapper;
 import com.seeha.stock.basic.service.StockService;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
@@ -39,6 +42,9 @@ public class StockServiceImpl implements StockService {
 
     @Autowired
     private KlineMapper klineMapper;
+
+    @Autowired
+    private KlineInterfaceMapper klineInterfaceMapper;
 
     @Override
     public String getStocksInfo() {
@@ -68,16 +74,18 @@ public class StockServiceImpl implements StockService {
 
 
     @Override
-    public String getStocksKlineInfo() {
+    public String getStocksKlineInfo(boolean todayFlag) {
         //String url, HttpMethod method, MultiValueMap<String, String> params
 
         // 获取请求list
         List<RequestList> requestLists = requestListMapper.selectAll();
-
+        if (todayFlag){
+            klineInterfaceMapper.deleteAll();
+        }
         for (RequestList requestList :requestLists){
-            int sleep = (int) (Math.random()*(10-1)+1);
+            int sleep = (int) (Math.random()*(5-1)+1);
             // process data
-            processSingleRequestKLines(requestList);
+            processSingleRequestKLines(requestList,todayFlag);
             try {
                 Thread.sleep(sleep*100);
                 System.out.println("睡眠："+sleep);
@@ -231,11 +239,11 @@ public class StockServiceImpl implements StockService {
 
     }
 
-    private void processSingleRequestKLines(RequestList requestList){
+    private void processSingleRequestKLines(RequestList requestList, boolean todayFlag){
 
         HttpMethod method = null;
         MultiValueMap<String,String> params = new LinkedMultiValueMap<>();
-
+        Integer integer = 0;
         // 发送报文
         if ("GET".equals(requestList.getMethod())){
             method = HttpMethod.GET;
@@ -247,8 +255,15 @@ public class StockServiceImpl implements StockService {
         ResultDto resultDto = gson.fromJson(result, ResultDto.class);
         //转换
         List<Kline> klineList = covert2klines(resultDto, requestList);
-        // 保存
-        Integer integer = klineMapper.batchInsert(klineList);
+        if (!todayFlag){
+            // 保存
+            integer = klineMapper.batchInsert(klineList);
+        }else{
+            // 只插入一条记录
+            KlineInterface klineInterface = new KlineInterface();
+            BeanUtils.copyProperties(klineList.get(klineList.size()-1),klineInterface);
+            integer = klineInterfaceMapper.insertSelective(klineInterface);
+        }
         System.out.println("处理了："+integer.intValue()+"条记录");
 
     }
@@ -339,6 +354,7 @@ public class StockServiceImpl implements StockService {
                 // 回写成功数据
                 requestList.setStockPlate(fundDetailDto.getF265());
                 requestList.setCirculation(fundDetailDto.getF21());
+                requestList.setStockDesc(fundDetailDto.getF103());
                 requestList.setUpdateDate(today);
                 fundDetailList.add(fundDetail);
             }

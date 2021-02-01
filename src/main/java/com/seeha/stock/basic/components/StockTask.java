@@ -25,11 +25,11 @@ public class StockTask {
 
     }
 
-    @Scheduled(cron = "0 35 9,11 ? * MON-FRI")
+    @Scheduled(cron = "0 30 18 ? * MON-FRI")
     //@Scheduled(cron = "0 0/15 * * * *")
     public void getStockEveryDayKline(){
 
-        stockService.getStocksKlineInfo();
+        stockService.getStocksKlineInfo(false);
         System.out.println("每天执行同步K线:" + new Date().toString() );
 
     }

@@ -20,7 +20,8 @@ public interface StockService {
 
    /**
     * 获取K线信息
+    * @param todayFlag
     * @return
     */
-   String getStocksKlineInfo();
+   String getStocksKlineInfo(boolean todayFlag);
 }

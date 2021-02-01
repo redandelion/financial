@@ -39,7 +39,14 @@ public class StockController {
     @GetMapping("/pull/kline")
     public String listKline(){
 
-        stockService.getStocksKlineInfo();
+        stockService.getStocksKlineInfo(false);
+        return "success";
+    }
+
+    @GetMapping("/pull/kline/today")
+    public String listKlineToday(){
+
+        stockService.getStocksKlineInfo(true);
         return "success";
     }
 
