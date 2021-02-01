@@ -254,7 +254,7 @@ public class StockServiceImpl implements StockService {
         // 解析
         ResultDto resultDto = gson.fromJson(result, ResultDto.class);
         //转换
-        List<Kline> klineList = covert2klines(resultDto, requestList);
+        List<Kline> klineList = covert2klines(resultDto, requestList,todayFlag);
         if (!todayFlag){
             // 保存
             integer = klineMapper.batchInsert(klineList);
@@ -268,13 +268,14 @@ public class StockServiceImpl implements StockService {
 
     }
 
-    private List<Kline> covert2klines(ResultDto resultDto, RequestList requestList) {
+    private List<Kline> covert2klines(ResultDto resultDto, RequestList requestList, boolean todayFlag) {
         // 删除有关联的数据
         List<Kline> klineList = new ArrayList<>();
         Kline kline = new Kline();
-        kline.setRequestListId(requestList.getRequestListId());
-        klineMapper.delete(kline);
-
+        if (!todayFlag) {
+            kline.setRequestListId(requestList.getRequestListId());
+            klineMapper.delete(kline);
+        }
         // 遍历数组
         if (resultDto.getData() != null && resultDto.getData().getKlines() != null){
             List<String> klines = resultDto.getData().getKlines();
